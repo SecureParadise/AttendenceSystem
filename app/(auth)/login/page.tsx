@@ -7,15 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Image from "next/image";
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  GraduationCap,
-} from "lucide-react";
+
+import { Eye, EyeOff, Mail, Lock} from "lucide-react";
 import Link from "next/link";
+import LeftDecorator from "@/components/sidebar/LeftDecorator";
 
 /* ---------------- Zod schema ---------------- */
 const loginFormSchema = z.object({
@@ -74,83 +69,7 @@ export default function Login() {
       <div className="w-full max-w-6xl bg-linear-to-br from-blue-100 via-sky-100 to-indigo-100 rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-3">
           {/* Left decorative panel - Matching signup theme */}
-          <div className="hidden sm:flex flex-col justify-center items-center p-8 bg-gradient-to-b from-blue-800 to-indigo-900 text-white lg:col-span-1">
-            <div className="w-full space-y-8">
-              {/* Logo Container */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-48 h-48 mb-6">
-                  <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent rounded-full blur-xl"></div>
-                  <div className="relative w-full h-full rounded-full border-4 border-white/30 bg-white/10 backdrop-blur-sm p-3 shadow-2xl">
-                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/40 bg-white">
-                      <Image
-                        src="/wrc-logo.png"
-                        alt="WRC logo"
-                        width={212}
-                        height={238}
-                        className="w-full h-full object-contain p-4"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* University Text */}
-                <div className="text-center space-y-4">
-                  <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-wide text-white drop-shadow-lg">
-                      Tribhuvan University
-                    </h1>
-                    <div className="h-1 w-24 bg-linear-to-r from-transparent via-white/50 to-transparent mx-auto"></div>
-                  </div>
-
-                  <h2 className="text-2xl font-semibold text-blue-100">
-                    Institute of Engineering
-                  </h2>
-
-                  <h3 className="text-2xl font-bold text-white bg-linear-to-r from-transparent via-white/20 to-transparent py-2 px-6 rounded-lg">
-                    PASHCHIMANCHAL CAMPUS
-                  </h3>
-
-                  <div className="pt-4">
-                    <p className="text-blue-200 text-sm italic">
-                      Western Regional Campus
-                    </p>
-                    <p className="text-blue-200/80 text-xs mt-1">
-                      लामाचाँग, पोखरा
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Welcome Message */}
-              <div className="mt-8 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                <div className="flex items-center gap-3 mb-3">
-                  <GraduationCap size={24} className="text-blue-200" />
-                  <h4 className="text-lg font-semibold text-white">
-                    Welcome Back
-                  </h4>
-                </div>
-                <p className="text-blue-100 text-sm">
-                  Access the campus attandence management system with your
-                  credentials. Please ensure you&apos;re using your official
-                  campus email.
-                </p>
-              </div>
-
-              {/* Decorative Elements */}
-              <div className="mt-4">
-                <div className="flex justify-center space-x-2">
-                  {[...Array(3)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-2 h-2 rounded-full bg-white/30 ${
-                        i === 1 ? "bg-white/70" : ""
-                      }`}
-                    ></div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <LeftDecorator />
 
           {/* Login Form section */}
           <div className="p-6 md:p-8 lg:col-span-2">

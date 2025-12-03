@@ -169,8 +169,8 @@ export default function EmailVerification() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4 md:p-6">
-      <div className="w-full max-w-6xl bg-gradient-to-br from-blue-100 via-sky-100 to-indigo-100 rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4 md:p-6">
+      <div className="w-full max-w-6xl bg-linear-to-br from-blue-100 via-sky-100 to-indigo-100 rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-3">
           {/* Left decorative panel - Matching theme */}
           <LeftDecorator />
@@ -179,11 +179,11 @@ export default function EmailVerification() {
           <div className="p-6 md:p-8 lg:col-span-2">
             <div className="mb-8 text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="w-12 h-12 bg-linear-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
                   <Mail size={24} className="text-white" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-green-700 to-emerald-700 bg-clip-text text-transparent">
+                  <h1 className="text-4xl font-bold bg-linear-to-r from-green-700 to-emerald-700 bg-clip-text text-transparent">
                     Verify Your Email
                   </h1>
                   <p className="text-gray-600 mt-1">
@@ -255,7 +255,7 @@ export default function EmailVerification() {
                 </div>
 
                 {/* Timer and Resend Section */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 bg-linear-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -323,7 +323,7 @@ export default function EmailVerification() {
                   <Button
                     type="submit"
                     disabled={isSubmitting || otpDigits.some((d) => d === "")}
-                    className="w-full py-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-6 bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       <>
@@ -341,7 +341,7 @@ export default function EmailVerification() {
 
                 {/* Success State */}
                 {isVerified && (
-                  <div className="animate-fade-in p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                  <div className="animate-fade-in p-4 bg-linear-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                         <CheckCircle size={20} className="text-green-600" />
