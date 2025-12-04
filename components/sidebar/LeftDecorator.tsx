@@ -1,3 +1,4 @@
+// components/sidebar/LeftDecorator
 import Image from 'next/image'
 
 
