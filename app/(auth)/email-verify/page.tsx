@@ -30,7 +30,13 @@ const otpFormSchema = z.object({
 
 type OtpFormType = z.infer<typeof otpFormSchema>;
 
-/* ---------------- Component ---------------- */
+/**
+ * Render an email verification form with six per-digit OTP inputs, a countdown timer, resend flow, and verification controls.
+ *
+ * The component manages OTP input state (per-digit entry, paste handling, auto-advance and backspace navigation), a five-minute expiry timer that enables resending when expired, simulated resend and verification flows with loading states, and a success state after verification. It displays validation errors for the OTP and includes links for navigation and support.
+ *
+ * @returns The JSX element for the email verification UI
+ */
 export default function EmailVerification() {
   const {
     register,
