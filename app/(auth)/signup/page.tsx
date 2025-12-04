@@ -172,7 +172,15 @@ const signUpFormSchema = z
 
 type SignUpFormType = z.infer<typeof signUpFormSchema>;
 
-/* ---------------- Component ---------------- */
+/**
+ * Renders the sign-up form UI for creating a new account with role-based validation and conditional fields.
+ *
+ * The component manages form state and validation (via zod), enforces role-selection rules, conditionally displays
+ * student/teaching/admin sections, validates password requirements, and submits a JSON payload to /api/signup.
+ * When an admin or adminstaff role is selected, the department is auto-assigned to "Administration" before submit.
+ *
+ * @returns JSX element containing the complete sign-up form and related UI controls.
+ */
 export default function SignUp() {
   const {
     register,

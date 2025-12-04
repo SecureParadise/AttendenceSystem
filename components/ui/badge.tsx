@@ -25,6 +25,14 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * Renders a small, styled badge with a selectable visual variant and optional polymorphic root.
+ *
+ * @param className - Additional CSS classes appended to the badge's computed classes.
+ * @param variant - Visual variant to apply (controls color and outline styles).
+ * @param asChild - If true, renders a Radix `Slot` instead of a `span` so the badge can be applied to a custom child element.
+ * @returns The rendered badge element.
+ */
 function Badge({
   className,
   variant,

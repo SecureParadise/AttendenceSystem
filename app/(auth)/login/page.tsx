@@ -28,7 +28,14 @@ const loginFormSchema = z.object({
 
 type LoginFormType = z.infer<typeof loginFormSchema>;
 
-/* ---------------- Component ---------------- */
+/**
+ * Renders the Campus Login page with email and password fields, client-side validation, and submission handling.
+ *
+ * The component uses React Hook Form with a Zod schema to validate inputs, provides a show/hide password toggle,
+ * a "Remember me" checkbox, and submits credentials to the /api/login endpoint, showing success or error alerts.
+ *
+ * @returns The login page UI as a React element.
+ */
 export default function Login() {
   const {
     register,
