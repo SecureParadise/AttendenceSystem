@@ -102,7 +102,7 @@ const generateRandomAttendance = () => {
   return data;
 };
 
-const AttendanceSheet = () => {
+const AttendanceSheetAdmin_view = () => {
   const [attendanceData, setAttendanceData] = useState<
     Record<string, Record<string, string>>
   >({});
@@ -778,4 +778,4 @@ const AttendanceSheet = () => {
   );
 };
 
-export default AttendanceSheet;
+export default AttendanceSheetAdmin_view;

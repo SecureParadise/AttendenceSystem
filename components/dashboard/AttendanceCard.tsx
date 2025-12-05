@@ -12,7 +12,7 @@ interface SubjectAttendance {
   delayedPresent: number;
   latePresent: number;
   absent: number;
-  weightedScore: number;
+  weightedScore: number; 
   maxPossibleScore: number;
   attendancePercentage: number;
   status: "good" | "warning" | "critical";

@@ -14,7 +14,7 @@ const CustomImage = ({ src, alt, tailcs, stylus }: customImageProps) => {
     <div className="relative group">
       <div className="absolute -inset-1 bg-linear-to-r from-blue-500 to-purple-500 rounded-full blur opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
       <ImageContainer src={src} alt={alt} tailcs={tailcs} stylus={stylus} />
-    </div>
+    </div> 
   );
 };
 

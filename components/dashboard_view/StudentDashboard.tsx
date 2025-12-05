@@ -1,4 +1,5 @@
-// app/(user)/dashboard/page.tsx
+// components/dashboard_view/StudentDashboard.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -138,7 +139,7 @@ const semesterMonths = [
   { value: "chaitra", label: "Chaitra 2082" },
 ];
 
-const Page = () => {
+const StudentDashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState("paush");
 
   const selectedMonthLabel =
@@ -250,4 +251,4 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default StudentDashboard;

@@ -7,7 +7,7 @@ import { ChevronDown, Calendar, BookOpen } from "lucide-react";
 interface MonthOption {
   value: string;
   label: string;
-}
+} 
 
 interface RibbonProps {
   selectedMonth: string;
