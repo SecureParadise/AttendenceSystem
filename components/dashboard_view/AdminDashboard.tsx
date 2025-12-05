@@ -72,7 +72,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-linear-to-b from-blue-50 to-gray-50">
       {/* Fixed Header with Ribbon */}
       <div className="sticky top-0 z-50">
-        <DashboardHeader />
+        <DashboardHeader src="/admin.jpg" alt="bei hod" />
         <Ribbon
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}

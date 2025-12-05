@@ -72,7 +72,7 @@ const TeacherDashboard = () => {
     <div className="min-h-screen bg-linear-to-b from-blue-50 to-gray-50">
       {/* Fixed Header with Ribbon */}
       <div className="sticky top-0 z-50">
-        <DashboardHeader />
+        <DashboardHeader src="/tech.jpg" alt="teacher image" />
         <Ribbon
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}

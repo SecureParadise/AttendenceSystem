@@ -1,10 +1,16 @@
-import StudentDashboard from "@/components/dashboard_view/StudentDashboard"
+// import StudentDashboard from "@/components/dashboard_view/StudentDashboard"
+
+// import TeacherDashboard from "@/components/dashboard_view/TeacherDashboard"
+
+import AdminDashboard from "@/components/dashboard_view/AdminDashboard"
 
 
 const page = () => {
   return (
     <>
-    <StudentDashboard />
+    {/* <StudentDashboard /> */}
+    <AdminDashboard />
+    {/* <TeacherDashboard /> */}
     </>
   )
 }

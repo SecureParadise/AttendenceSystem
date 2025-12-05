@@ -18,7 +18,7 @@ const CustomImage = ({ src, alt, tailcs, stylus }: customImageProps) => {
   );
 };
 
-const DashboardHeader = () => {
+const DashboardHeader = ({src,alt}:customImageProps) => {
   const defaultImageStyle = {
     objectFit: "contain" as const,
     width: "100%",
@@ -88,7 +88,7 @@ const DashboardHeader = () => {
 
         {/* MOBILE: Hidden, DESKTOP: User Image on RIGHT */}
         <div className="shrink-0 hover:scale-105 transition-transform duration-300">
-          <CustomImage src="/mukesh.jpg" alt="WRC Institution Logo" />
+          <CustomImage src={src} alt={alt} />
         </div>
         
       </div>

@@ -150,7 +150,7 @@ const StudentDashboard = () => {
     <div className="min-h-screen bg-linear-to-b from-blue-50 to-gray-50">
       {/* Fixed Header Section - Always stays at top */}
       <div className="sticky top-0 z-50">
-        <DashboardHeader />
+        <DashboardHeader src="/mukesh.jpg" alt="hero student" />
         <Ribbon
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
