@@ -23,166 +23,111 @@ interface SubjectAttendance {
   status: "good" | "warning" | "critical";
 }
 
-// Function to calculate weighted attendance
+// Function to calculate weighted attendance with proper return type
 const calculateWeightedAttendance = (
   present: number,
   delayedPresent: number,
   latePresent: number,
   absent: number,
   totalClasses: number
-) => {
+): {
+  weightedScore: number;
+  maxPossibleScore: number;
+  attendancePercentage: number;
+  status: "good" | "warning" | "critical";
+} => {
   const weightedScore =
     present * 1.0 + delayedPresent * 0.8 + latePresent * 0.6 + absent * 0;
   const attendancePercentage =
     totalClasses > 0 ? (weightedScore / totalClasses) * 100 : 0;
 
+  let status: "good" | "warning" | "critical";
+  if (attendancePercentage >= 80) {
+    status = "good";
+  } else if (attendancePercentage >= 70) {
+    status = "warning";
+  } else {
+    status = "critical";
+  }
+
   return {
     weightedScore: parseFloat(weightedScore.toFixed(2)),
     maxPossibleScore: totalClasses,
     attendancePercentage: parseFloat(attendancePercentage.toFixed(1)),
-    status:
-      attendancePercentage >= 80
-        ? "good"
-        : attendancePercentage >= 70
-        ? "warning"
-        : "critical",
+    status,
+  };
+};
+
+// Helper function to create complete subject objects
+const createSubject = (
+  id: number,
+  subjectCode: string,
+  subjectName: string,
+  teacher: string,
+  totalClasses: number,
+  present: number,
+  delayedPresent: number,
+  latePresent: number,
+  absent: number
+): SubjectAttendance => {
+  const weightedData = calculateWeightedAttendance(
+    present,
+    delayedPresent,
+    latePresent,
+    absent,
+    totalClasses
+  );
+
+  return {
+    id,
+    subjectCode,
+    subjectName,
+    teacher,
+    totalClasses,
+    present,
+    delayedPresent,
+    latePresent,
+    absent,
+    weightedScore: weightedData.weightedScore,
+    maxPossibleScore: weightedData.maxPossibleScore,
+    attendancePercentage: weightedData.attendancePercentage,
+    status: weightedData.status,
   };
 };
 
 // Mock data based on your schedule with proper weighted calculations
 const mockSubjects: SubjectAttendance[] = [
-  {
-    id: 1,
-    subjectCode: "OS",
-    subjectName: "Operating Systems",
-    teacher: "BP",
-    totalClasses: 16,
-    present: 10,
-    delayedPresent: 3,
-    latePresent: 1,
-    absent: 2,
-    ...calculateWeightedAttendance(10, 3, 1, 2, 16),
-  },
-  {
-    id: 2,
-    subjectCode: "COA",
-    subjectName: "Computer Organization & Architecture",
-    teacher: "BHP",
-    totalClasses: 12,
-    present: 8,
-    delayedPresent: 2,
-    latePresent: 0,
-    absent: 2,
-    ...calculateWeightedAttendance(8, 2, 0, 2, 12),
-  },
-  {
-    id: 3,
-    subjectCode: "CN",
-    subjectName: "Computer Networks",
-    teacher: "PA",
-    totalClasses: 12,
-    present: 7,
-    delayedPresent: 2,
-    latePresent: 1,
-    absent: 2,
-    ...calculateWeightedAttendance(7, 2, 1, 2, 12),
-  },
-  {
-    id: 4,
-    subjectCode: "DBMS",
-    subjectName: "Database Management System",
-    teacher: "RKC",
-    totalClasses: 12,
-    present: 6,
-    delayedPresent: 3,
-    latePresent: 1,
-    absent: 2,
-    ...calculateWeightedAttendance(6, 3, 1, 2, 12),
-  },
-  {
-    id: 5,
-    subjectCode: "FD",
-    subjectName: "Filter Design",
-    teacher: "BS",
-    totalClasses: 8,
-    present: 4,
-    delayedPresent: 2,
-    latePresent: 1,
-    absent: 1,
-    ...calculateWeightedAttendance(4, 2, 1, 1, 8),
-  },
-  {
-    id: 6,
-    subjectCode: "EE",
-    subjectName: "Engineering Economics",
-    teacher: "KKB",
-    totalClasses: 8,
-    present: 5,
-    delayedPresent: 1,
-    latePresent: 1,
-    absent: 1,
-    ...calculateWeightedAttendance(5, 1, 1, 1, 8),
-  },
-  {
-    id: 7,
-    subjectCode: "CN Lab",
-    subjectName: "Computer Networks Lab",
-    teacher: "PA",
-    totalClasses: 8,
-    present: 6,
-    delayedPresent: 1,
-    latePresent: 0,
-    absent: 1,
-    ...calculateWeightedAttendance(6, 1, 0, 1, 8),
-  },
-  {
-    id: 8,
-    subjectCode: "DBMS Lab",
-    subjectName: "Database Management System Lab",
-    teacher: "RKC",
-    totalClasses: 8,
-    present: 7,
-    delayedPresent: 0,
-    latePresent: 0,
-    absent: 1,
-    ...calculateWeightedAttendance(7, 0, 0, 1, 8),
-  },
-  {
-    id: 9,
-    subjectCode: "OS Lab",
-    subjectName: "Operating Systems Lab",
-    teacher: "BP",
-    totalClasses: 8,
-    present: 5,
-    delayedPresent: 1,
-    latePresent: 1,
-    absent: 1,
-    ...calculateWeightedAttendance(5, 1, 1, 1, 8),
-  },
-  {
-    id: 10,
-    subjectCode: "COA Lab",
-    subjectName: "Computer Organization & Architecture Lab",
-    teacher: "BHP",
-    totalClasses: 8,
-    present: 6,
-    delayedPresent: 1,
-    latePresent: 0,
-    absent: 1,
-    ...calculateWeightedAttendance(6, 1, 0, 1, 8),
-  },
-  {
-    id: 11,
-    subjectCode: "FD Lab",
-    subjectName: "Filter Design Lab",
-    teacher: "BS",
-    totalClasses: 8,
-    present: 5,
-    delayedPresent: 2,
-    latePresent: 0,
-    absent: 1,
-    ...calculateWeightedAttendance(5, 2, 0, 1, 8),
-  },
+  createSubject(1, "OS", "Operating Systems", "BP", 16, 10, 3, 1, 2),
+  createSubject(
+    2,
+    "COA",
+    "Computer Organization & Architecture",
+    "BHP",
+    12,
+    8,
+    2,
+    0,
+    2
+  ),
+  createSubject(3, "CN", "Computer Networks", "PA", 12, 7, 2, 1, 2),
+  createSubject(4, "DBMS", "Database Management System", "RKC", 12, 6, 3, 1, 2),
+  createSubject(5, "FD", "Filter Design", "BS", 8, 4, 2, 1, 1),
+  createSubject(6, "EE", "Engineering Economics", "KKB", 8, 5, 1, 1, 1),
+  createSubject(7, "CN Lab", "Computer Networks Lab", "PA", 8, 6, 1, 0, 1),
+  createSubject(8, "DBMS Lab", "Database Management System Lab", "RKC", 8, 7, 0, 0, 1),
+  createSubject(9, "OS Lab", "Operating Systems Lab", "BP", 8, 5, 1, 1, 1),
+  createSubject(
+    10,
+    "COA Lab",
+    "Computer Organization & Architecture Lab",
+    "BHP",
+    8,
+    6,
+    1,
+    0,
+    1
+  ),
+  createSubject(11, "FD Lab", "Filter Design Lab", "BS", 8, 5, 2, 0, 1),
 ];
 
 // Month options for 5th semester
@@ -215,9 +160,6 @@ const Page = () => {
       {/* Main Content - Scrolls normally */}
       <main className="p-4 md:p-6 pt-6">
         <div className="max-w-7xl mx-auto">
-          {/* Overall Statistics Banner - Simple and clean */}
-          
-
           {/* Subject Cards Grid */}
           <div className="mb-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
