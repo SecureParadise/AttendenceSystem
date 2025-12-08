@@ -16,8 +16,8 @@ datasource db {
 
 // Entities
 model Department {
-  id   String  @id @default(cuid())
-  name String  @unique
+  id   String @id @default(cuid())
+  name String @unique
   // code String? @unique
   // description String?
   // I don't think image/logo of department is necessary if in case we need then
@@ -127,14 +127,16 @@ model ClassSessions {
 
 // Base User model for common fields
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  phone        String?
-  passwordHash String
-  image        String? // Cloudinary URL for profile picture
-  isActive     Boolean   @default(true)
-  lastLogin    DateTime?
-  role         UserRole  @default(STUDENT)
+  id                String    @id @default(cuid())
+  email             String    @unique
+  phone             String    @unique
+  passwordHash      String
+  isActive          Boolean   @default(true)
+  isEmailVerified   Boolean   @default(false)
+  isPhoneVerified   Boolean?  @default(false)
+  isProfileComplete Boolean   @default(false)
+  lastLogin         DateTime?
+  role              UserRole  @default(STUDENT)
 
   // Timestamps
   createdAt DateTime @default(now())
