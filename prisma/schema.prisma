@@ -143,9 +143,10 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations to specific user types
-  student Student?
-  teacher Teacher?
-  crew    Crew?
+  student                 Student?
+  teacher                 Teacher?
+  crew                    Crew?
+  emailVerificationTokens EmailVerificationToken[]
 
   @@index([email, role])
   @@map("users")
@@ -384,4 +385,18 @@ model ImageAsset {
   @@index([userId, entityType])
   @@index([publicId])
   @@map("image_assets")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otp       String // e.g. "123456"
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, otp])
+  @@map("email_verification_tokens")
 }
