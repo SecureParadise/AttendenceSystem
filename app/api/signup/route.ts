@@ -4,6 +4,14 @@ import { NextResponse } from "next/server";
 import { Prisma, UserRole } from "@/app/generated/prisma/client";
 import dbConnect from "@/lib/dbConnect";
 import bcrypt from "bcryptjs";
+import { sendVerificationEmail } from "@/lib/email";
+
+function generateOtp(length = 6) {
+  // OTP is string like "707708"
+  const min = 10 ** (length - 1); //10**5 =1,00,000
+  const max = 10 ** length - 1; //10**6 = 1,000,000 -1 = 999,999
+  return Math.floor(Math.random() * (max - min + 1) + min).toString();
+}
 
 export async function POST(req: Request) {
   try {
@@ -83,6 +91,8 @@ export async function POST(req: Request) {
         phone: normalizedPhone,
         passwordHash,
         role: mappedRole,
+        isEmailVerified: false,
+        isProfileComplete: false,
       },
       select: {
         id: true,
@@ -94,10 +104,26 @@ export async function POST(req: Request) {
       },
     });
 
+    // store otp at db
+    const otp = generateOtp(6);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await dbConnect.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        otp,
+        expiresAt,
+      },
+    });
+    // send otp email
+    await sendVerificationEmail({
+      to: user.email,
+      otp,
+    });
+    // Redirect to /email-verify page
     return NextResponse.json(
       {
-        message: "Account created successfully. Please verify your email.",
-        redirectTo: "/email-verify", // 👈 same page
+        message: "Account created. Please verify your email.",
+        redirectTo: `/email-verify?email=${encodeURIComponent(user.email)}`, //move to this link and verify your otp
         user,
       },
       { status: 201 }
