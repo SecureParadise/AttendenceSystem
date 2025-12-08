@@ -15,9 +15,12 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    const normalizedEmail = email.trim().toLocaleLowerCase();
 
-    const user = dbConnect.user.findUnique({
+    const normalizedEmail = email.trim().toLowerCase();
+    const trimmedOtp = otp.trim();
+
+    // 👇 IMPORTANT: await the query
+    const user = await dbConnect.user.findUnique({
       where: {
         email: normalizedEmail,
       },
@@ -25,15 +28,15 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { message: "Inavlid email or code" },
+        { message: "Invalid email or code" },
         { status: 400 }
       );
     }
 
     const token = await dbConnect.emailVerificationToken.findFirst({
       where: {
-        userId: user.id,
-        otp,
+        userId: user.id,        // ✅ now user has .id
+        otp: trimmedOtp,
         used: false,
       },
       orderBy: {
@@ -43,7 +46,7 @@ export async function POST(req: Request) {
 
     if (!token) {
       return NextResponse.json(
-        { mesage: "Invalid verification code" },
+        { message: "Invalid verification code" },
         { status: 400 }
       );
     }
@@ -54,10 +57,11 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    // In db convert isEmailVerified = true, and token_used=true
+
+    // Mark email as verified and token as used
     await dbConnect.$transaction([
       dbConnect.user.update({
-        where: { id: user.id },
+        where: { id: user.id },    // ✅ user.id works now
         data: {
           isEmailVerified: true,
         },
@@ -67,18 +71,15 @@ export async function POST(req: Request) {
         data: { used: true },
       }),
     ]);
+
     return NextResponse.json(
       { message: "Email verified successfully", redirectTo: "/login" },
-      {
-        status: 200,
-      }
+      { status: 200 }
     );
   } catch (err: unknown) {
     console.log("Email Verification error", err);
     return NextResponse.json(
-      {
-        message: "Internal Server error",
-      },
+      { message: "Internal Server error" },
       { status: 500 }
     );
   }

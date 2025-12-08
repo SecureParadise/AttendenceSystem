@@ -35,8 +35,9 @@ const ROLE_LIST = [
 
 /* ---------------- Regex Patterns ---------------- */
 
-const emailRegex =
-  /^pas0\d{2}(bei|bct|bel|bge|bce|bme|bame)\d{3}@wrc\.edu\.np$/i;
+// const emailRegex =
+// /^pas0\d{2}(bei|bct|bel|bge|bce|bme|bame)\d{3}@wrc\.edu\.np$/i;
+const emailRegex = /^[\p{L}0-9._%+-]{1,64}@[\p{L}0-9.-]{1,255}\.[\p{L}]{2,}$/u;
 const phoneRegex = /^\d{10}$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
