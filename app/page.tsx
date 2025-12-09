@@ -1,12 +1,9 @@
-
-
+import React from 'react'
 
 const page = () => {
   return (
-    <>
-      <h1>HEllo</h1>
-    </>
-  );
-};
+    <div>Home</div>
+  )
+}
 
-export default page;
+export default page

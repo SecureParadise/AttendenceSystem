@@ -3,7 +3,7 @@ import Image from "next/image";
 
 interface ImageContainerProps {
   src: string;
-  alt: string;
+  alt: string; 
   tailcs?: string;
   stylus?:React.CSSProperties;
 }

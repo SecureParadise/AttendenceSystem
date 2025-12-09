@@ -96,4 +96,5 @@ const DashboardHeader = ({src,alt}:customImageProps) => {
   );
 };
 
-export default DashboardHeader;
+export  default DashboardHeader;
+
