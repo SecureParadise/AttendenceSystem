@@ -174,7 +174,7 @@ const EmailVerification = () => {
     }
 
     try {
-      const res = await fetch("/api/verify-email", {
+      const res = await fetch("/api/email-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: emailFromQuery, otp: values.otp }),

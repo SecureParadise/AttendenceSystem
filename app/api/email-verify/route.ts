@@ -1,3 +1,4 @@
+// app/api/email-verify/route.ts
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 
