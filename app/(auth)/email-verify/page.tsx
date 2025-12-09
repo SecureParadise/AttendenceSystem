@@ -1,3 +1,5 @@
+// app/(auth)/email-verify/page.tsx
+
 "use client";
 
 import React, { useState, useRef, useEffect, KeyboardEvent } from "react";
@@ -7,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Mail,
   Lock,
@@ -19,7 +21,6 @@ import {
 import Link from "next/link";
 import LeftDecorator from "@/components/sidebar/LeftDecorator";
 
-
 /* ---------------- Zod schema ---------------- */
 const otpFormSchema = z.object({
   otp: z
@@ -30,27 +31,41 @@ const otpFormSchema = z.object({
 
 type OtpFormType = z.infer<typeof otpFormSchema>;
 
-/* ---------------- Component ---------------- */
-export default function EmailVerification() {
+/* ---------------- Helpers ---------------- */
+
+// format seconds -> mm:ss
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+};
+
+const EmailVerification = () => {
   const {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<OtpFormType>({
     resolver: zodResolver(otpFormSchema),
   });
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const emailFromQuery = searchParams.get("email") || "";
+
+  // OTP digits for 6 boxes
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+
+  // timer related
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [canResend, setCanResend] = useState(false);
+
+  // UI state flags
   const [isVerified, setIsVerified] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const userEmail = "user@example.com"; // Replace with actual email from context/auth
 
   /* ---------- Timer for OTP expiration ---------- */
   useEffect(() => {
@@ -66,25 +81,19 @@ export default function EmailVerification() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  /* ---------- Format time display ---------- */
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  };
-
   /* ---------- Handle OTP input change ---------- */
   const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d?$/.test(value)) return; // Only allow single digit
+    // allow only one digit
+    if (!/^\d?$/.test(value)) return;
 
     const newOtpDigits = [...otpDigits];
     newOtpDigits[index] = value;
     setOtpDigits(newOtpDigits);
 
-    // Update form value
+    // update hidden "otp" field in react-hook-form
     setValue("otp", newOtpDigits.join(""), { shouldValidate: true });
 
-    // Auto-focus next input
+    // auto-focus next input
     if (value !== "" && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -93,12 +102,11 @@ export default function EmailVerification() {
   /* ---------- Handle backspace ---------- */
   const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && otpDigits[index] === "" && index > 0) {
-      // Move focus to previous input on backspace
       inputRefs.current[index - 1]?.focus();
     }
   };
 
-  /* ---------- Handle paste ---------- */
+  /* ---------- Handle paste (6 digits) ---------- */
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").trim();
@@ -113,66 +121,103 @@ export default function EmailVerification() {
 
       setOtpDigits(newOtpDigits);
       setValue("otp", newOtpDigits.join(""), { shouldValidate: true });
-
-      // Focus last input
       inputRefs.current[5]?.focus();
     }
   };
 
   /* ---------- Resend OTP ---------- */
   const handleResendOtp = async () => {
-    if (!canResend) return;
+    if (!canResend || !emailFromQuery) return;
 
     setIsResending(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const res = await fetch("/api/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailFromQuery }),
+      });
 
-      // Reset timer and OTP
+      const data = (await res.json().catch(() => ({}))) as {
+        message?: string;
+      };
+
+      if (!res.ok) {
+        alert(data.message || "Failed to resend OTP. Please try again.");
+        return;
+      }
+
+      // reset timer + OTP boxes
       setTimeLeft(300);
       setCanResend(false);
       setOtpDigits(["", "", "", "", "", ""]);
       setValue("otp", "", { shouldValidate: false });
-
-      // Focus first input
       inputRefs.current[0]?.focus();
 
-      alert("New OTP has been sent to your email!");
-    } catch (error) {
-      alert("Failed to resend OTP. Please try again.");
+      alert(data.message || "New OTP has been sent to your email!");
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message || "Failed to resend OTP. Please try again.");
+      } else {
+        alert("Failed to resend OTP. Please try again.");
+      }
     } finally {
       setIsResending(false);
     }
   };
 
-  /* ---------- Submit handler ---------- */
+  /* ---------- Submit handler (verify OTP) ---------- */
   const onSubmit = async (values: OtpFormType) => {
-    console.log("OTP verification attempt:", values);
+    if (!emailFromQuery) {
+      alert("Email is missing. Please open the verification link again.");
+      return;
+    }
 
     try {
-      // Simulate API verification
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const res = await fetch("/api/email-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailFromQuery, otp: values.otp }),
+      });
 
-      // For demo, accept any 6-digit OTP starting with 1
-      if (values.otp.startsWith("1")) {
-        setIsVerified(true);
-        alert("Email verified successfully!");
-        // In real app, you would redirect or update auth state
-        // router.push("/dashboard");
-      } else {
-        throw new Error("Invalid OTP code");
+      const data = (await res.json().catch(() => ({}))) as {
+        message?: string;
+        redirectTo?: string;
+      };
+
+      console.log("Verify response:", data);
+
+      if (!res.ok) {
+        alert(data.message || "Invalid OTP. Please try again.");
+        return;
       }
-    } catch (e: any) {
-      alert(e.message || "Invalid OTP. Please try again.");
+
+      setIsVerified(true);
+      alert(data.message || "Email verified successfully!");
+
+      setTimeout(() => {
+        if (data.redirectTo) {
+          router.push(data.redirectTo);
+        } else {
+          router.push("/login");
+        }
+      }, 1000);
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message || "Verification failed. Please try again.");
+      } else {
+        alert("Verification failed. Please try again.");
+      }
     }
   };
+
+  const isEmailMissing = !emailFromQuery;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4 md:p-6">
       <div className="w-full max-w-6xl bg-linear-to-br from-blue-100 via-sky-100 to-indigo-100 rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-3">
-          {/* Left decorative panel - Matching theme */}
+          {/* Left decorative panel */}
           <LeftDecorator />
 
           {/* Verification Form section */}
@@ -187,8 +232,17 @@ export default function EmailVerification() {
                     Verify Your Email
                   </h1>
                   <p className="text-gray-600 mt-1">
-                    Enter the 6-digit code sent to : pas078@wrc.edu.np
+                    Enter the 6-digit code sent to:{" "}
+                    <span className="font-semibold">
+                      {emailFromQuery || "your email"}
+                    </span>
                   </p>
+                  {isEmailMissing && (
+                    <p className="text-sm text-red-600 mt-1">
+                      Email is missing in URL. Please open the verification
+                      link from your email again.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -214,13 +268,13 @@ export default function EmailVerification() {
                             ref={(el) => (inputRefs.current[index] = el)}
                             type="text"
                             inputMode="numeric"
-                            pattern="\d"
                             maxLength={1}
                             value={digit}
                             onChange={(e) =>
                               handleOtpChange(index, e.target.value)
                             }
                             onKeyDown={(e) => handleKeyDown(index, e)}
+                            disabled={isEmailMissing}
                             className={`w-14 h-14 md:w-16 md:h-16 text-center text-2xl font-bold rounded-xl border-2 ${
                               errors.otp
                                 ? "border-red-300 focus:border-red-500 focus:ring-red-500"
@@ -231,13 +285,14 @@ export default function EmailVerification() {
                           />
                           {index < 5 && (
                             <div className="absolute top-1/2 right-0 translate-x-3 -translate-y-1/2">
-                              <div className="w-2 h-0.5 bg-gray-300"></div>
+                              <div className="w-2 h-0.5 bg-gray-300" />
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
 
+                    {/* hidden input for react-hook-form */}
                     <input type="hidden" {...register("otp")} />
 
                     {errors.otp && (
@@ -299,14 +354,14 @@ export default function EmailVerification() {
                     type="button"
                     variant="outline"
                     onClick={handleResendOtp}
-                    disabled={!canResend || isResending}
+                    disabled={!canResend || isResending || isEmailMissing}
                     className={`border-blue-300 hover:bg-blue-50 hover:border-blue-400 rounded-xl ${
                       canResend ? "bg-blue-100" : ""
                     }`}
                   >
                     {isResending ? (
                       <>
-                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></span>
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2" />
                         Sending...
                       </>
                     ) : (
@@ -322,12 +377,16 @@ export default function EmailVerification() {
                 <div className="pt-4">
                   <Button
                     type="submit"
-                    disabled={isSubmitting || otpDigits.some((d) => d === "")}
+                    disabled={
+                      isSubmitting ||
+                      otpDigits.some((d) => d === "") ||
+                      isEmailMissing
+                    }
                     className="w-full py-6 bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       <>
-                        <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></span>
+                        <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3" />
                         Verifying...
                       </>
                     ) : (
@@ -361,7 +420,7 @@ export default function EmailVerification() {
                 {/* Divider */}
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-blue-200"></div>
+                    <div className="w-full border-t border-blue-200" />
                   </div>
                   <div className="relative flex justify-center text-sm">
                     <span className="px-4 bg-white text-gray-500">
@@ -378,7 +437,7 @@ export default function EmailVerification() {
                       type="button"
                       onClick={handleResendOtp}
                       className="text-blue-600 font-medium hover:text-blue-800 hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!canResend}
+                      disabled={!canResend || isEmailMissing}
                     >
                       Resend OTP
                     </button>
@@ -415,7 +474,7 @@ export default function EmailVerification() {
                       strokeLinejoin="round"
                       strokeWidth="2"
                       d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                    ></path>
+                    />
                   </svg>
                   Back to Login
                 </Link>
@@ -443,4 +502,6 @@ export default function EmailVerification() {
       </div>
     </div>
   );
-}
+};
+
+export default EmailVerification;
