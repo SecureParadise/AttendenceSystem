@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3744a585-4e7c-43a0-93cb-5693d847c85a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(auth)/email-verify/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(auth)/email-verify/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/email-verify/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/email-verify/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/email.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/email.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
-    </list>
+    <list default="true" id="3744a585-4e7c-43a0-93cb-5693d847c85a" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -102,7 +96,7 @@
       <workItem from="1765111910196" duration="573000" />
       <workItem from="1765112501471" duration="3331000" />
       <workItem from="1765266531988" duration="36000" />
-      <workItem from="1765266578120" duration="1776000" />
+      <workItem from="1765266578120" duration="2392000" />
     </task>
     <servers />
   </component>

@@ -166,19 +166,12 @@ enum UserRole {
 }
 
 model Student {
-  id               String    @id @default(cuid())
-  rollNo           String    @unique
-  firstName        String
-  middleName       String?
-  lastName         String
-  dob              DateTime? // Date of birth
-  gender           String? // M, F, O
-  // address          String?
-  emergencyContact String?
-
-  // Image field (also in User model, but specific to student if needed)
-  // The main image will be in User model
-
+  id                String             @id @default(cuid())
+  rollNo            String             @unique
+  firstName         String
+  middleName        String?
+  lastName          String
+  image             String //from cloudnary
   // Relations
   user              User               @relation(fields: [userId], references: [id])
   userId            String             @unique
@@ -207,11 +200,12 @@ model Student {
 
 model Teacher {
   id             String  @id @default(cuid())
-  employeeId     String  @unique
+  cardNo         String  @unique
   firstName      String
   middleName     String?
   lastName       String
   designation    String // Lecturer, Assistant Professor, Professor, etc.
+  image          String //cloudnary
   // qualification  String? // Ph.D., M.Tech, etc.
   specialization String?
 
@@ -240,7 +234,7 @@ model Teacher {
   hodOf     Department? @relation("Department_HOD")
   dhodOf    Department? @relation("Department_DHOD")
 
-  @@index([employeeId, departmentId])
+  @@index([cardNo, departmentId])
   @@map("teachers")
 }
 
