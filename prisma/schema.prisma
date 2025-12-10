@@ -1,58 +1,48 @@
-// prisma/schema.prisma
-
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-// cuid -> collision-resistant unique ID
+// schema.prisma
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-// Entities
+// Main Entities
 model Department {
-  id   String @id @default(cuid())
-  name String @unique
-  // code String? @unique
-  // description String?
-  // I don't think image/logo of department is necessary if in case we need then
-  // image String? 
+  id          String  @id @default(cuid())
+  name        String  @unique
+  code        String? @unique
+  description String?
+  image       String? // Cloudinary URL for department logo/icon
 
   // Relations
-  branches  Branch[]
-  teachers  Teacher[]
-  hod       Teacher?  @relation("Department_HOD", fields: [hodId], references: [id])
-  hodId     String?   @unique
-  dhod      Teacher?  @relation("Department_DHOD", fields: [dhodId], references: [id])
-  dhodId    String?   @unique
+  branches Branch[]
+  teachers Teacher[]
+  hod      Teacher?  @relation("Department_HOD", fields: [hodId], references: [id])
+  hodId    String?   @unique
+  dhod     Teacher?  @relation("Department_DHOD", fields: [dhodId], references: [id])
+  dhodId   String?   @unique
+
   // Timestamps
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("departments")
 }
 
 model Branch {
-  id           String @id @default(cuid())
-  name         String
-  code         String @unique
-  departmentId String
-  // description String?
-  // image String?
+  id          String  @id @default(cuid())
+  name        String
+  code        String  @unique
+  description String?
+  image       String? // Cloudinary URL for branch image
 
   // Relations
-
-  department Department @relation(fields: [departmentId], references: [id])
-  semesters  Semester[]
-  students   Student[]
-  subjects   Subject[]
+  department   Department @relation(fields: [departmentId], references: [id])
+  departmentId String
+  semesters    Semester[]
+  students     Student[]
+  subjects     Subject[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -64,17 +54,18 @@ model Branch {
 
 model Semester {
   id     String  @id @default(cuid())
-  number Int
-  name   String?
+  number Int // 1-8
+  name   String? // e.g., "First Semester", "Second Semester"
 
-  //Relation 
-  branch    Branch    @relation(fields: [branchId], references: [id])
-  branchId  String
-  subjects  Subject[]
-  students  Student[] @relation("Student_CurrentSemester")
+  // Relations
+  branch   Branch    @relation(fields: [branchId], references: [id])
+  branchId String
+  subjects Subject[]
+  students Student[] @relation("Student_CurrentSemester")
+
   // Timestamps
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([branchId, number])
   @@map("semesters")
@@ -86,16 +77,16 @@ model Subject {
   code    String  @unique
   isLab   Boolean @default(false)
   credits Int?
-  // image String?
+  image   String? // Cloudinary URL for subject image
 
   // Relations
-  branch     Branch          @relation(fields: [branchId], references: [id])
+  branch     Branch         @relation(fields: [branchId], references: [id])
   branchId   String
-  semester   Semester        @relation(fields: [semesterId], references: [id])
+  semester   Semester       @relation(fields: [semesterId], references: [id])
   semesterId String
-  teacher    Teacher         @relation(fields: [teacherId], references: [id])
+  teacher    Teacher        @relation(fields: [teacherId], references: [id])
   teacherId  String
-  sessions   ClassSessions[]
+  sessions   ClassSession[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -105,7 +96,7 @@ model Subject {
   @@map("subjects")
 }
 
-model ClassSessions {
+model ClassSession {
   id        String   @id @default(cuid())
   date      DateTime // Date of the session
   startTime DateTime // Start time (with date)
@@ -129,26 +120,23 @@ model ClassSessions {
 
 // Base User model for common fields
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  phone             String    @unique
-  passwordHash      String
-  isActive          Boolean   @default(true)
-  isEmailVerified   Boolean   @default(false)
-  isPhoneVerified   Boolean?  @default(false)
-  isProfileComplete Boolean   @default(false)
-  lastLogin         DateTime?
-  role              UserRole  @default(STUDENT)
+  id           String    @id @default(cuid())
+  email        String    @unique
+  phone        String?
+  passwordHash String
+  image        String? // Cloudinary URL for profile picture
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  role         UserRole  @default(STUDENT)
 
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations to specific user types
-  student                 Student?
-  teacher                 Teacher?
-  crew                    Crew?
-  emailVerificationTokens EmailVerificationToken[]
+  student Student?
+  teacher Teacher?
+  crew    Crew?
 
   @@index([email, role])
   @@map("users")
@@ -166,12 +154,20 @@ enum UserRole {
 }
 
 model Student {
-  id                String             @id @default(cuid())
-  rollNo            String             @unique
-  firstName         String
-  middleName        String?
-  lastName          String
-  image             String? //from cloudnary
+  id               String    @id @default(cuid())
+  rollNo           String    @unique
+  firstName        String
+  middleName       String?
+  lastName         String
+  enrollmentNumber String?   @unique
+  dob              DateTime? // Date of birth
+  gender           String? // M, F, O
+  address          String?
+  emergencyContact String?
+
+  // Image field (also in User model, but specific to student if needed)
+  // The main image will be in User model
+
   // Relations
   user              User               @relation(fields: [userId], references: [id])
   userId            String             @unique
@@ -194,28 +190,27 @@ model Student {
   updatedAt DateTime @updatedAt
 
   @@index([branchId, currentSemesterId])
-  @@index([rollNo])
+  @@index([rollNo, enrollmentNumber])
   @@map("students")
 }
 
 model Teacher {
   id             String  @id @default(cuid())
-  cardNo         String  @unique
+  employeeId     String  @unique
   firstName      String
   middleName     String?
   lastName       String
   designation    String // Lecturer, Assistant Professor, Professor, etc.
-  image          String? //cloudnary
-  // qualification  String? // Ph.D., M.Tech, etc.
+  qualification  String? // Ph.D., M.Tech, etc.
   specialization String?
 
   // Relations
-  user         User            @relation(fields: [userId], references: [id])
-  userId       String          @unique
-  department   Department      @relation(fields: [departmentId], references: [id])
+  user         User           @relation(fields: [userId], references: [id])
+  userId       String         @unique
+  department   Department     @relation(fields: [departmentId], references: [id])
   departmentId String
   subjects     Subject[]
-  sessions     ClassSessions[]
+  sessions     ClassSession[]
 
   // Admin roles
   isHod             Boolean @default(false)
@@ -234,7 +229,7 @@ model Teacher {
   hodOf     Department? @relation("Department_HOD")
   dhodOf    Department? @relation("Department_DHOD")
 
-  @@index([cardNo, departmentId])
+  @@index([employeeId, departmentId])
   @@map("teachers")
 }
 
@@ -266,9 +261,9 @@ model AttendanceRecord {
   id String @id @default(cuid())
 
   // Relations
-  student   Student       @relation(fields: [studentId], references: [id])
+  student   Student      @relation(fields: [studentId], references: [id])
   studentId String
-  session   ClassSessions @relation(fields: [sessionId], references: [id])
+  session   ClassSession @relation(fields: [sessionId], references: [id])
   sessionId String
 
   // Attendance data
@@ -276,7 +271,7 @@ model AttendanceRecord {
   arrivalTime DateTime? // Calculated arrival time (could be same as scanTime)
   score       Float            @default(0.0) // 1.0, 0.8, 0.6, 0.0
   status      AttendanceStatus @default(ABSENT)
-  markedBy    MarkedBy         @default(RFID) // How attendance was marked
+  markedBy    MarkedBy         @default(MANUAL) // How attendance was marked
   notes       String? // Optional notes for manual adjustments
 
   // Device info
@@ -311,7 +306,8 @@ enum AttendanceStatus {
 enum MarkedBy {
   RFID
   FINGERPRINT
-  MANUAL_SYSTEM
+  MANUAL
+  SYSTEM
 }
 
 // For system logs and audit trails
@@ -381,18 +377,4 @@ model ImageAsset {
   @@index([userId, entityType])
   @@index([publicId])
   @@map("image_assets")
-}
-
-model EmailVerificationToken {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  otp       String // e.g. "123456"
-  expiresAt DateTime
-  used      Boolean  @default(false)
-
-  createdAt DateTime @default(now())
-
-  @@index([userId, otp, expiresAt])
-  @@map("email_verification_tokens")
 }

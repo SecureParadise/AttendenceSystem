@@ -1,34 +1,32 @@
-// app/api/complete-profile/teacher/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
-import { UserRole } from "@/app/generated/prisma/client";
+import { UserRole } from "@/app/generated/prisma/enums"; // this import works for you
 
 export async function POST(req: NextRequest) {
   try {
-    // 1) Read body
+    // 1) Read JSON body
     const body = await req.json();
 
-    // 2) Extract fields
+    // 2) Extract fields actually sent from frontend
     const {
-      userId,
+      email,
+      cardNo,
       firstName,
       middleName,
       lastName,
-      cardNo,
-      departmentId,
+      departmentKey, // value from DEPARTMENT_OPTIONS (e.g. "dept_electrical")
       designation,
       specialization,
       image,
       officeHours,
       roomNumber,
     } = body as {
-      userId?: string;
+      email?: string;
+      cardNo?: string;
       firstName?: string;
       middleName?: string;
       lastName?: string;
-      cardNo?: string;
-      departmentId?: string;
+      departmentKey?: string;
       designation?: string;
       specialization?: string;
       image?: string;
@@ -36,24 +34,19 @@ export async function POST(req: NextRequest) {
       roomNumber?: string;
     };
 
-    // 3) Check required fields
-    if (
-      !userId ||
-      !firstName ||
-      !lastName ||
-      !cardNo ||
-      !departmentId ||
-      !designation
-    ) {
+    // 3) Required field check
+    if (!email || !cardNo || !firstName || !lastName || !departmentKey || !designation) {
       return NextResponse.json(
         { message: "Missing required fields for teacher profile." },
         { status: 400 }
       );
     }
 
-    // 4) Find user and validate role
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // 4) Find user by email
     const user = await dbConnect.user.findUnique({
-      where: { id: userId },
+      where: { email: normalizedEmail },
       select: {
         id: true,
         role: true,
@@ -78,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     // 6) Check if teacher profile already exists for this user
     const existingTeacherByUser = await dbConnect.teacher.findUnique({
-      where: { userId: userId },
+      where: { userId: user.id },
     });
 
     if (existingTeacherByUser) {
@@ -100,16 +93,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 8) Create teacher + update user in transaction
+    // 8) Find department by departmentKey (id)
+    // you inserted departments with ids: 'dept_electrical', 'dept_civil', ...
+    const department = await dbConnect.department.findUnique({
+      where: { id: departmentKey },
+    });
+
+    if (!department) {
+      return NextResponse.json(
+        { message: "Invalid department selected." },
+        { status: 400 }
+      );
+    }
+
+    // 9) Create teacher + update user in one transaction
     const [teacher] = await dbConnect.$transaction([
       dbConnect.teacher.create({
         data: {
-          userId,
+          userId: user.id,
+          cardNo: cardNo.trim(),
           firstName: firstName.trim(),
           middleName: middleName?.trim() || null,
           lastName: lastName.trim(),
-          cardNo: cardNo.trim(),
-          departmentId,
+          departmentId: department.id,
           designation: designation.trim(),
           specialization: specialization?.trim() || null,
           image: image || null,
@@ -118,14 +124,14 @@ export async function POST(req: NextRequest) {
         },
       }),
       dbConnect.user.update({
-        where: { id: userId },
+        where: { id: user.id },
         data: {
           isProfileComplete: true,
         },
       }),
     ]);
 
-    // 9) Return success
+    // 10) Success response
     return NextResponse.json(
       {
         message: "Teacher profile completed successfully.",
@@ -137,7 +143,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Error in /api/complete-profile/teacher:", error);
 
-    // 10) Handle P2002 for unique cardNo
+    // Handle unique cardNo
     if (
       error?.code === "P2002" &&
       Array.isArray(error?.meta?.target) &&
@@ -149,7 +155,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 11) Fallback error
     return NextResponse.json(
       { message: "Something went wrong while completing teacher profile." },
       { status: 500 }

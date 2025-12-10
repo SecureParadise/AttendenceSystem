@@ -63,10 +63,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 8) Compare the plain password with saved hash
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.passwordHash
-    );
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     // 9) If password does not match, return error
     if (!isPasswordValid) {
@@ -81,7 +78,18 @@ export async function POST(req: NextRequest) {
 
     // 11) If profile is not complete, send to complete-profile first
     if (!user.isProfileComplete) {
-      redirectTo = "/complete-profile";
+      let roleParam: "student" | "teacher" | null = null;
+      if (user.role === UserRole.STUDENT) {
+        roleParam = "student";
+      } else if (user.role === UserRole.TEACHER) {
+        roleParam = "teacher";
+      }
+      const searchParams = new URLSearchParams();
+      if(roleParam){
+        searchParams.set("role",roleParam)
+      }
+      searchParams.set("email",user.email);
+      redirectTo = `/complete-profile?${searchParams.toString()}`;
     } else {
       // 12) If profile is complete, send based on user role
       switch (user.role) {

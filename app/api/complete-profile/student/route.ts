@@ -1,46 +1,43 @@
 // app/api/complete-profile/student/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import { UserRole } from "@/app/generated/prisma/client";
 
 export async function POST(req: NextRequest) {
   try {
-    // 1) Read JSON body from request
+    // 1) Read JSON body
     const body = await req.json();
 
-    // 2) Extract expected fields
+    // 2) Take what we really send from frontend
     const {
-      userId,
+      email,
+      rollNo,
       firstName,
       middleName,
       lastName,
-      rollNo,
-      branchId,
-      currentSemesterId,
-      academicYear,
+      branchCode,
+      currentSemesterNumber,
       batch,
-      image,
     } = body as {
-      userId?: string;
+      email?: string;
+      rollNo?: string;
       firstName?: string;
       middleName?: string;
       lastName?: string;
-      rollNo?: string;
-      branchId?: string;
-      currentSemesterId?: string;
-      academicYear?: string;
+      branchCode?: string;
+      currentSemesterNumber?: string;
       batch?: string;
-      image?: string;
     };
 
-    // 3) Check required fields
+    // 3) Basic required checks
     if (
-      !userId ||
+      !email ||
+      !rollNo ||
       !firstName ||
       !lastName ||
-      !rollNo ||
-      !branchId
+      !branchCode ||
+      !currentSemesterNumber ||
+      !batch
     ) {
       return NextResponse.json(
         { message: "Missing required fields for student profile." },
@@ -48,9 +45,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4) Find the user from database
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // 4) Find user by email
     const user = await dbConnect.user.findUnique({
-      where: { id: userId },
+      where: { email: normalizedEmail },
       select: {
         id: true,
         role: true,
@@ -58,7 +57,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 5) If no user or wrong role, reject
+    // 5) Validate user + role
     if (!user || user.role !== UserRole.STUDENT) {
       return NextResponse.json(
         { message: "User not found or not a student." },
@@ -66,7 +65,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 6) If profile already complete, avoid duplicate creation
+    // 6) Prevent duplicate completion
     if (user.isProfileComplete) {
       return NextResponse.json(
         { message: "Profile is already completed." },
@@ -76,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     // 7) Check if a student profile already exists for this user
     const existingStudentByUser = await dbConnect.student.findUnique({
-      where: { userId: userId },
+      where: { userId: user.id },
     });
 
     if (existingStudentByUser) {
@@ -88,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     // 8) Check if roll number is already used
     const existingStudentByRoll = await dbConnect.student.findUnique({
-      where: { rollNo },
+      where: { rollNo: rollNo.trim() },
     });
 
     if (existingStudentByRoll) {
@@ -98,31 +97,63 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 9) Create student profile + update user in a transaction
+    // 9) Find Branch from branchCode (BCE, BEI, ...)
+    const branch = await dbConnect.branch.findUnique({
+      where: { code: branchCode },
+    });
+
+    if (!branch) {
+      return NextResponse.json(
+        { message: "Invalid branch selected." },
+        { status: 400 }
+      );
+    }
+
+    // 10) Find Semester from (branchId, number)
+    const semesterNumber = parseInt(currentSemesterNumber, 10);
+
+    const semester = await dbConnect.semester.findUnique({
+      where: {
+        // uses @@unique([branchId, number]) in your schema
+        branchId_number: {
+          branchId: branch.id,
+          number: semesterNumber,
+        },
+      },
+    });
+
+    if (!semester) {
+      return NextResponse.json(
+        { message: "Invalid semester selected for this branch." },
+        { status: 400 }
+      );
+    }
+
+    // 11) Create student + mark user profile complete (transaction)
     const [student] = await dbConnect.$transaction([
       dbConnect.student.create({
         data: {
-          userId,
+          userId: user.id,
           firstName: firstName.trim(),
           middleName: middleName?.trim() || null,
           lastName: lastName.trim(),
           rollNo: rollNo.trim(),
-          branchId,
-          currentSemesterId: currentSemesterId || null,
-          academicYear: academicYear || null,
-          batch: batch || null,
-          image: image || null,
+          branchId: branch.id,
+          currentSemesterId: semester.id,
+          academicYear: `${batch} Batch`,
+          batch: `${batch} Batch`,
+          image: null,
         },
       }),
       dbConnect.user.update({
-        where: { id: userId },
+        where: { id: user.id },
         data: {
           isProfileComplete: true,
         },
       }),
     ]);
 
-    // 10) Return success and maybe where to go next
+    // 12) Success response
     return NextResponse.json(
       {
         message: "Student profile completed successfully.",
@@ -131,25 +162,12 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
-    // 11) Handle Prisma unique errors if needed
+  } catch (error) {
     console.error("Error in /api/complete-profile/student:", error);
-
-    // 12) Basic error handling for P2002 (unique constraint)
-    if (
-      error?.code === "P2002" &&
-      Array.isArray(error?.meta?.target) &&
-      error.meta.target.includes("rollNo")
-    ) {
-      return NextResponse.json(
-        { message: "Roll number already exists." },
-        { status: 409 }
-      );
-    }
-
-    // 13) Fallback error response
     return NextResponse.json(
-      { message: "Something went wrong while completing student profile." },
+      {
+        message: "Something went wrong while completing student profile.",
+      },
       { status: 500 }
     );
   }
