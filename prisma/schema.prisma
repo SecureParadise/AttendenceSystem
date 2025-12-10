@@ -171,7 +171,7 @@ model Student {
   firstName         String
   middleName        String?
   lastName          String
-  image             String //from cloudnary
+  image             String? //from cloudnary
   // Relations
   user              User               @relation(fields: [userId], references: [id])
   userId            String             @unique
@@ -205,7 +205,7 @@ model Teacher {
   middleName     String?
   lastName       String
   designation    String // Lecturer, Assistant Professor, Professor, etc.
-  image          String //cloudnary
+  image          String? //cloudnary
   // qualification  String? // Ph.D., M.Tech, etc.
   specialization String?
 
@@ -393,6 +393,6 @@ model EmailVerificationToken {
 
   createdAt DateTime @default(now())
 
-  @@index([userId, otp])
+  @@index([userId, otp, expiresAt])
   @@map("email_verification_tokens")
 }

@@ -1,107 +1,133 @@
 // app/api/login/route.ts
-import { NextResponse } from "next/server";
-import dbConnect from "@/lib/dbConnect";
-import bcrypt from "bcryptjs";
-// If you want Prisma error codes:
-// import { Prisma } from "@/app/generated/prisma/client";
 
-export async function POST(req: Request) {
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import dbConnect from "@/lib/dbConnect";
+import { UserRole } from "@/app/generated/prisma/client";
+
+// This function runs when the client sends a POST request to /api/login
+export async function POST(req: NextRequest) {
   try {
+    // 1) Read JSON body from the request
     const body = await req.json();
 
+    // 2) Take out these fields from the body
     const { email, password, rememberMe } = body as {
       email?: string;
       password?: string;
       rememberMe?: boolean;
     };
 
-    // 1) Basic validation
+    // 3) Make sure email and password are provided
     if (!email || !password) {
       return NextResponse.json(
-        { message: "Email and password are required" },
+        { message: "Email and password are required." },
         { status: 400 }
       );
     }
 
+    // 4) Clean the email (remove spaces, make lowercase)
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 2) Find user by email
+    // 5) Find user in database by email
     const user = await dbConnect.user.findUnique({
       where: { email: normalizedEmail },
-    });
-
-    if (!user) {
-      // Do NOT reveal whether email exists (security)
-      return NextResponse.json(
-        { message: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
-
-    // 3) Check if email is verified
-    if (!user.isEmailVerified) {
-      return NextResponse.json(
-        {
-          message:
-            "Your email is not verified. Please verify your email before logging in.",
-          redirectTo: `/email-verify?email=${encodeURIComponent(
-            normalizedEmail
-          )}`,
-        },
-        { status: 403 }
-      );
-    }
-
-    // 4) Check account active
-    if (!user.isActive) {
-      return NextResponse.json(
-        {
-          message:
-            "Your account is deactivated. Please contact campus admin/support.",
-        },
-        { status: 403 }
-      );
-    }
-
-    // 5) Compare password using bcrypt
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { message: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
-
-    // 6) Optional: update lastLogin
-    await dbConnect.user.update({
-      where: { id: user.id },
-      data: {
-        lastLogin: new Date(),
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        role: true,
+        isEmailVerified: true,
+        isProfileComplete: true,
+        createdAt: true,
       },
     });
 
-    // 7) Decide redirect based on profile completeness
-    let redirectTo = "/dashboard";
-
-    // If you added isProfileComplete flag on User:
-    if (!user.isProfileComplete) {
-      redirectTo = "/complete-profile"; // you will create this page later
+    // 6) If no user found, return "invalid email or password"
+    if (!user) {
+      return NextResponse.json(
+        { message: "Invalid email or password." },
+        { status: 401 }
+      );
     }
 
-    // In real app you would also set a session / JWT cookie here.
-    // For now we just return success message and redirect URL.
-    return NextResponse.json(
+    // 7) If email is not verified, send them to email-verify page
+    if (!user.isEmailVerified) {
+      return NextResponse.json(
+        {
+          message: "Please verify your email before logging in.",
+          redirectTo: `/email-verify?email=${encodeURIComponent(user.email)}`,
+        },
+        { status: 403 }
+      );
+    }
+
+    // 8) Compare the plain password with saved hash
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.passwordHash
+    );
+
+    // 9) If password does not match, return error
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { message: "Invalid email or password." },
+        { status: 401 }
+      );
+    }
+
+    // 10) Decide where to redirect after successful login
+    let redirectTo = "/";
+
+    // 11) If profile is not complete, send to complete-profile first
+    if (!user.isProfileComplete) {
+      redirectTo = "/complete-profile";
+    } else {
+      // 12) If profile is complete, send based on user role
+      switch (user.role) {
+        case UserRole.STUDENT:
+          redirectTo = "/dashboard/student"; // later: maybe /dashboard/student/[rollNo]
+          break;
+        case UserRole.TEACHER:
+          redirectTo = "/dashboard/teacher";
+          break;
+        case UserRole.ADMIN:
+          redirectTo = "/dashboard/admin";
+          break;
+        case UserRole.HOD:
+          redirectTo = "/dashboard/hod";
+          break;
+        default:
+          redirectTo = "/dashboard";
+      }
+    }
+
+    // 13) Create response JSON
+    const response = NextResponse.json(
       {
-        message: "Login successful",
+        message: "Login successful.",
         redirectTo,
       },
       { status: 200 }
     );
-  } catch (err) {
-    console.error("Login error:", err);
+
+    // 14) TODO: Here you will set a real auth cookie / session
+    // Example (pseudo):
+    // const token = createJwtToken({ userId: user.id, role: user.role });
+    // response.cookies.set("auth_token", token, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   maxAge: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 2, // 30 days vs 2 hours
+    //   path: "/",
+    // });
+
+    // 15) Return response back to client
+    return response;
+  } catch (error) {
+    // 16) Log error on server and send generic message
+    console.error("Error in /api/login:", error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: "Something went wrong while logging in." },
       { status: 500 }
     );
   }
