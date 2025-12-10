@@ -1,30 +1,23 @@
-// app/api/email-verify/route.ts
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, otp } = body as {
-      email?: string;
-      otp?: string;
-    };
+    const { email, otp } = body as { email?: string; otp?: string };
 
     if (!email || !otp) {
       return NextResponse.json(
-        { message: "Fields are missing" },
+        { message: "Email and OTP are required" },
         { status: 400 }
       );
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const trimmedOtp = otp.trim();
 
-    // 👇 IMPORTANT: await the query
+    // 1) Find user
     const user = await dbConnect.user.findUnique({
-      where: {
-        email: normalizedEmail,
-      },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
@@ -34,15 +27,14 @@ export async function POST(req: Request) {
       );
     }
 
+    // 2) Find latest matching OTP, not used
     const token = await dbConnect.emailVerificationToken.findFirst({
       where: {
-        userId: user.id,        // ✅ now user has .id
-        otp: trimmedOtp,
+        userId: user.id,
+        otp,
         used: false,
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     });
 
     if (!token) {
@@ -52,17 +44,18 @@ export async function POST(req: Request) {
       );
     }
 
+    // 3) Check expiry
     if (token.expiresAt < new Date()) {
       return NextResponse.json(
-        { message: "Verification code is expired" },
+        { message: "Verification code has expired" },
         { status: 400 }
       );
     }
 
-    // Mark email as verified and token as used
+    // 4) Mark user verified + token used
     await dbConnect.$transaction([
       dbConnect.user.update({
-        where: { id: user.id },    // ✅ user.id works now
+        where: { id: user.id },
         data: {
           isEmailVerified: true,
         },
@@ -74,13 +67,16 @@ export async function POST(req: Request) {
     ]);
 
     return NextResponse.json(
-      { message: "Email verified successfully", redirectTo: "/login" },
+      {
+        message: "Email verified successfully",
+        redirectTo: "/login", // later you can change to /complete-profile
+      },
       { status: 200 }
     );
-  } catch (err: unknown) {
-    console.log("Email Verification error", err);
+  } catch (err) {
+    console.error("Verify email error:", err);
     return NextResponse.json(
-      { message: "Internal Server error" },
+      { message: "Internal server error" },
       { status: 500 }
     );
   }
