@@ -1,5 +1,3 @@
-// app/api/resend-verification/route.ts
-
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import { sendVerificationEmail } from "@/lib/email";
@@ -62,4 +60,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

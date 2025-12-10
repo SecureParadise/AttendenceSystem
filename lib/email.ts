@@ -8,7 +8,7 @@ export async function sendVerificationEmail(options: {
   otp: string;
 }) {
   if (!process.env.RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not set");
+    console.error("RESEND_API_KEY is not set");
     return;
   }
 
