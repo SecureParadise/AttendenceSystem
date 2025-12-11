@@ -1,163 +1,123 @@
-import { NextRequest, NextResponse } from "next/server";
+// app/api/complete-profile/teacher/route.ts
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
-import { UserRole } from "@/app/generated/prisma/enums"; // this import works for you
 
-export async function POST(req: NextRequest) {
+type Body = {
+  email?: string;
+  cardNo?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  designation?: string;
+  departmentId?: string;   // preferred: DB id
+  departmentKey?: string;  // fallback: client static key like "dept_electrical"
+  departmentLabel?: string;
+  specialization?: string;
+};
+
+function normalize(s?: string) {
+  if (!s) return "";
+  return String(s).toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+export async function POST(req: Request) {
   try {
-    // 1) Read JSON body
-    const body = await req.json();
+    const body = (await req.json()) as Body;
 
-    // 2) Extract fields actually sent from frontend
-    const {
-      email,
-      cardNo,
-      firstName,
-      middleName,
-      lastName,
-      departmentKey, // value from DEPARTMENT_OPTIONS (e.g. "dept_electrical")
-      designation,
-      specialization,
-      image,
-      officeHours,
-      roomNumber,
-    } = body as {
-      email?: string;
-      cardNo?: string;
-      firstName?: string;
-      middleName?: string;
-      lastName?: string;
-      departmentKey?: string;
-      designation?: string;
-      specialization?: string;
-      image?: string;
-      officeHours?: string;
-      roomNumber?: string;
-    };
-
-    // 3) Required field check
-    if (!email || !cardNo || !firstName || !lastName || !departmentKey || !designation) {
+    // Basic validation
+    if (!body.email) return NextResponse.json({ error: "email is required" }, { status: 400 });
+    if (!body.cardNo || !body.firstName || !body.lastName || !body.designation) {
       return NextResponse.json(
-        { message: "Missing required fields for teacher profile." },
+        { error: "cardNo, firstName, lastName and designation are required" },
         { status: 400 }
       );
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const { email, cardNo, firstName, middleName, lastName, designation, departmentId, departmentKey, departmentLabel, specialization } = body;
 
-    // 4) Find user by email
-    const user = await dbConnect.user.findUnique({
-      where: { email: normalizedEmail },
-      select: {
-        id: true,
-        role: true,
-        isProfileComplete: true,
-      },
-    });
+    // Load departments from DB once (no strict select to avoid schema problems)
+    const departments = await dbConnect.department.findMany({ orderBy: { name: "asc" } });
 
-    if (!user || user.role !== UserRole.TEACHER) {
+    // Try to resolve department
+    let resolvedDept = null as any | null;
+
+    // 1) If departmentId provided, prefer it
+    if (departmentId) {
+      resolvedDept = departments.find((d: any) => String(d.id) === String(departmentId));
+    }
+
+    // 2) If not resolved and departmentKey provided, attempt tolerant matching
+    if (!resolvedDept && departmentKey) {
+      // remove common prefix like "dept", "department", underscores and non-alnum
+      const keyRaw = normalize(departmentKey);
+      const keyStripped = keyRaw.replace(/^(dept|department)/, "");
+      // compute normalized name for each dept and try to match
+      resolvedDept = departments.find((d: any) => {
+        const nameNorm = normalize(d.name ?? (d as any).label ?? (d as any).code ?? d.id);
+        // exact id/key match
+        if (String(d.id) === departmentKey || String(d.id) === keyRaw) return true;
+        // some DBs may have 'code' or 'key' fields - compare them defensively
+        const code = normalize((d as any).code ?? (d as any).key ?? (d as any).value ?? "");
+        if (code && (code === keyRaw || code === keyStripped)) return true;
+        // substring match: if normalized name contains the stripped key (e.g., 'electrical')
+        if (keyStripped && nameNorm.includes(keyStripped)) return true;
+        // also check if name contains full keyRaw (fallback)
+        if (keyRaw && nameNorm.includes(keyRaw)) return true;
+        return false;
+      });
+    }
+
+    // 3) If still not resolved and departmentLabel provided, attempt matching by label
+    if (!resolvedDept && departmentLabel) {
+      const labelNorm = normalize(departmentLabel);
+      resolvedDept = departments.find((d: any) => normalize(d.name ?? (d as any).label ?? "").includes(labelNorm));
+    }
+
+    // If still not found, return helpful 400 with available departments
+    if (!resolvedDept) {
+      const simplified = departments.map((d: any) => ({ id: d.id, name: d.name ?? d.code ?? String(d.id) }));
       return NextResponse.json(
-        { message: "User not found or not a teacher." },
+        {
+          error: "Invalid department selected.",
+          hint: "Server could not resolve the provided departmentId/departmentKey. Use one of these department ids (preferred) or make your key match the name.",
+          received: { departmentId, departmentKey, departmentLabel },
+          availableDepartments: simplified,
+        },
         { status: 400 }
       );
     }
 
-    // 5) Avoid duplicate completion
-    if (user.isProfileComplete) {
-      return NextResponse.json(
-        { message: "Profile is already completed." },
-        { status: 400 }
-      );
-    }
+    // Find user by email
+    const user = await dbConnect.user.findUnique({ where: { email } });
+    if (!user) return NextResponse.json({ error: "User with provided email not found." }, { status: 404 });
 
-    // 6) Check if teacher profile already exists for this user
-    const existingTeacherByUser = await dbConnect.teacher.findUnique({
+    // Upsert Teacher (your schema uses Teacher model)
+    const teacher = await dbConnect.teacher.upsert({
       where: { userId: user.id },
-    });
-
-    if (existingTeacherByUser) {
-      return NextResponse.json(
-        { message: "Teacher profile already exists for this user." },
-        { status: 400 }
-      );
-    }
-
-    // 7) Check if card number is already used
-    const existingTeacherByCard = await dbConnect.teacher.findUnique({
-      where: { cardNo },
-    });
-
-    if (existingTeacherByCard) {
-      return NextResponse.json(
-        { message: "Card number already exists." },
-        { status: 409 }
-      );
-    }
-
-    // 8) Find department by departmentKey (id)
-    // you inserted departments with ids: 'dept_electrical', 'dept_civil', ...
-    const department = await dbConnect.department.findUnique({
-      where: { id: departmentKey },
-    });
-
-    if (!department) {
-      return NextResponse.json(
-        { message: "Invalid department selected." },
-        { status: 400 }
-      );
-    }
-
-    // 9) Create teacher + update user in one transaction
-    const [teacher] = await dbConnect.$transaction([
-      dbConnect.teacher.create({
-        data: {
-          userId: user.id,
-          cardNo: cardNo.trim(),
-          firstName: firstName.trim(),
-          middleName: middleName?.trim() || null,
-          lastName: lastName.trim(),
-          departmentId: department.id,
-          designation: designation.trim(),
-          specialization: specialization?.trim() || null,
-          image: image || null,
-          officeHours: officeHours || null,
-          roomNumber: roomNumber || null,
-        },
-      }),
-      dbConnect.user.update({
-        where: { id: user.id },
-        data: {
-          isProfileComplete: true,
-        },
-      }),
-    ]);
-
-    // 10) Success response
-    return NextResponse.json(
-      {
-        message: "Teacher profile completed successfully.",
-        teacherId: teacher.id,
-        redirectTo: "/dashboard/teacher",
+      update: {
+        cardNo,
+        firstName,
+        middleName: middleName ?? null,
+        lastName,
+        designation,
+        departmentId: resolvedDept.id, // write FK directly
+        specialization: specialization ?? null,
       },
-      { status: 201 }
-    );
-  } catch (error: any) {
-    console.error("Error in /api/complete-profile/teacher:", error);
+      create: {
+        user: { connect: { id: user.id } },
+        cardNo,
+        firstName,
+        middleName: middleName ?? null,
+        lastName,
+        designation,
+        department: { connect: { id: resolvedDept.id } },
+        specialization: specialization ?? null,
+      },
+    });
 
-    // Handle unique cardNo
-    if (
-      error?.code === "P2002" &&
-      Array.isArray(error?.meta?.target) &&
-      error.meta.target.includes("cardNo")
-    ) {
-      return NextResponse.json(
-        { message: "Card number already exists." },
-        { status: 409 }
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Something went wrong while completing teacher profile." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: true, message: "Teacher profile saved.", teacher, department: { id: resolvedDept.id, name: resolvedDept.name ?? null } });
+  } catch (err) {
+    console.error("/api/complete-profile/teacher error:", err);
+    return NextResponse.json({ error: "Internal server error", detail: (err as Error).message }, { status: 500 });
   }
 }
