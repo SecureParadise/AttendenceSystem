@@ -142,7 +142,6 @@ export async function POST(req: NextRequest) {
           currentSemesterId: semester.id,
           academicYear: `${batch} Batch`,
           batch: `${batch} Batch`,
-          image: null,
         },
       }),
       dbConnect.user.update({

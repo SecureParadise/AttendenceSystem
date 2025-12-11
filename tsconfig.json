@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "prisma/seed_branch_dept.ts"  ],
   "exclude": ["node_modules"]
 }

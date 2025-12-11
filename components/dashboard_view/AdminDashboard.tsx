@@ -1,4 +1,4 @@
-// AdminDashboard.tsx
+// components/dashboard_view/AdminDashboard.tsx
 "use client";
 
 import { useState } from "react";
@@ -65,7 +65,7 @@ const semesterMonths = [
   { value: "apr", label: "April 2024" },
 ];
 
-const AdminDashboard = () => {
+const AdminDashboard = () => { 
   const [selectedMonth, setSelectedMonth] = useState("jan");
 
   return (

@@ -4,7 +4,7 @@ import { PrismaClient } from "@/app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 // Tell TypeScript that globalThis may hold a Prisma client
-const globalForPrisma = globalThis as unknown as {
+const globalForPrisma = globalThis as unknown as { 
   prisma?: PrismaClient;
 };
 

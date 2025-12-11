@@ -1,4 +1,4 @@
-// TeacherDashboard.tsx
+//components/dashboard_view/TeacherDashboard.tsx
 "use client";
 
 import { useState } from "react";

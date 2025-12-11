@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/dbConnect";
 import { UserRole } from "@/app/generated/prisma/client";
+import { cookies } from "next/headers";
 
 // This function runs when the client sends a POST request to /api/login
 export async function POST(req: NextRequest) {
@@ -39,7 +40,6 @@ export async function POST(req: NextRequest) {
         role: true,
         isEmailVerified: true,
         isProfileComplete: true,
-        createdAt: true,
       },
     });
 
@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 10) Decide where to redirect after successful login
+    // (we can keep your existing logic here)
     let redirectTo = "/";
 
     // 11) If profile is not complete, send to complete-profile first
@@ -84,26 +85,25 @@ export async function POST(req: NextRequest) {
       } else if (user.role === UserRole.TEACHER) {
         roleParam = "teacher";
       }
+      // Build query string with role + email
       const searchParams = new URLSearchParams();
-      if(roleParam){
-        searchParams.set("role",roleParam)
+      if (roleParam) {
+        searchParams.set("role", roleParam);
       }
-      searchParams.set("email",user.email);
+      // always send the email
+      searchParams.set("email", user.email);
       redirectTo = `/complete-profile?${searchParams.toString()}`;
     } else {
       // 12) If profile is complete, send based on user role
       switch (user.role) {
         case UserRole.STUDENT:
-          redirectTo = "/dashboard/student"; // later: maybe /dashboard/student/[rollNo]
+          redirectTo = "/dashboard/student";
           break;
         case UserRole.TEACHER:
           redirectTo = "/dashboard/teacher";
           break;
-        case UserRole.ADMIN:
-          redirectTo = "/dashboard/admin";
-          break;
         case UserRole.HOD:
-          redirectTo = "/dashboard/hod";
+          redirectTo = "/dashboard/admin";
           break;
         default:
           redirectTo = "/dashboard";
@@ -119,15 +119,17 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
 
-    // 14) TODO: Here you will set a real auth cookie / session
-    // Example (pseudo):
-    // const token = createJwtToken({ userId: user.id, role: user.role });
-    // response.cookies.set("auth_token", token, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   maxAge: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 2, // 30 days vs 2 hours
-    //   path: "/",
-    // });
+    // 14) ✅ ACTUAL AUTH COOKIE (THIS WAS MISSING)
+    // We store just user.id for now. JWT is not required yet.
+    response.cookies.set("uid", user.id, {
+      httpOnly: true, // JS cannot read it
+      sameSite: "lax", // sent on normal navigation
+      secure: process.env.NODE_ENV === "production",
+      maxAge: rememberMe
+        ? 60 * 60 * 24 * 30 // 30 days if "remember me"
+        : 60 * 60 * 2, // 2 hours otherwise
+      path: "/", // valid for whole site
+    });
 
     // 15) Return response back to client
     return response;
