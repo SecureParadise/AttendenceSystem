@@ -1,7 +1,7 @@
 // components/dashboard/ImageContainer.tsx
 import Image from "next/image";
 
-interface ImageContainerProps {
+interface ImageContainerProps { 
   src: string;
   alt: string; 
   tailcs?: string;
